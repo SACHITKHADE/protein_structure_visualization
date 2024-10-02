@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, Response
 import requests
 from Bio.PDB import PDBParser
 from flask_cors import CORS
@@ -33,6 +33,17 @@ def predict(protein_id):
     
     plddt = calculate_plddt(pdb_data)
     return jsonify({'pdb': pdb_data, 'plddt': round(plddt, 2)})
+
+@app.route('/api/download/<protein_id>', methods=['GET'])
+def download(protein_id):
+    logging.debug(f'Received request to download PDB for Protein ID: {protein_id}')
+    pdb_data = fetch_protein_structure(protein_id)
+    if not pdb_data:
+        return jsonify({'error': 'Protein not found'}), 404
+    
+    response = Response(pdb_data, mimetype='chemical/x-pdb')
+    response.headers.set("Content-Disposition", "attachment", filename=f"{protein_id}.pdb")
+    return response
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
